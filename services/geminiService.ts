@@ -13,14 +13,26 @@ export const generateQuiz = async (count: number = 10): Promise<Question[]> => {
     ${RHEL_MODULES.join('\n')}
     
     CRITICAL CONSTRAINTS:
-    1. EXCLUDE Module 16 (Analyze servers and get support).
-    2. Module 5 MUST cover vim shortcuts.
-    3. Module 7 MUST cover immutability bits and sticky bits.
-    4. Include scenario-based questions for these specific troubleshooting tools: top, atop, iostat, sar, iotop, iftop, iperf, lsof, ethtool.
-    5. Include questions about these critical files: resolv.conf, hosts, fstab, mnttab, and cron-related files.
-    6. Include common troubleshooting tasks like grep/egrep usage, for loops in bash, and restarting services.
-    
-    Format each question as a real-world scenario where the admin must solve a problem based on these specific topics.
+    1. EXCLUDE Module 16.
+    2. Format as a real-world scenario.
+    3. NEW INTERACTIVE FEATURE: For each of the 4 options, provide a "optionSimulation" string. 
+       This string should look like realistic terminal output (logs, shell messages, or errors) that would occur if that command/action was executed in RHEL 10.
+    4. For incorrect options, the simulation should show a realistic error or a "no change" result.
+    5. For correct options, the simulation should show a successful execution log.
+
+    JSON Schema MUST follow:
+    {
+      "id": "uuid",
+      "module": "string",
+      "topic": "string",
+      "scenario": "string",
+      "question": "string",
+      "options": ["string", "string", "string", "string"],
+      "optionSimulations": ["string", "string", "string", "string"],
+      "correctAnswer": number,
+      "explanation": "string",
+      "difficulty": "Junior" | "Intermediate" | "Senior"
+    }
   `;
 
   const response = await ai.models.generateContent({
@@ -38,25 +50,22 @@ export const generateQuiz = async (count: number = 10): Promise<Question[]> => {
             topic: { type: Type.STRING },
             scenario: { type: Type.STRING },
             question: { type: Type.STRING },
-            options: { 
-              type: Type.ARRAY, 
-              items: { type: Type.STRING } 
-            },
-            correctAnswer: { type: Type.INTEGER, description: "Index of correct option (0-3)" },
+            options: { type: Type.ARRAY, items: { type: Type.STRING } },
+            optionSimulations: { type: Type.ARRAY, items: { type: Type.STRING } },
+            correctAnswer: { type: Type.INTEGER },
             explanation: { type: Type.STRING },
             difficulty: { type: Type.STRING, enum: Object.values(Difficulty) }
           },
-          required: ["id", "module", "topic", "scenario", "question", "options", "correctAnswer", "explanation", "difficulty"]
+          required: ["id", "module", "topic", "scenario", "question", "options", "optionSimulations", "correctAnswer", "explanation", "difficulty"]
         }
       }
     }
   });
 
   try {
-    const text = response.text || '';
-    return JSON.parse(text);
+    return JSON.parse(response.text || '[]');
   } catch (error) {
     console.error("Failed to parse quiz response:", error);
-    throw new Error("Failed to generate quiz questions based on specific topics.");
+    throw new Error("Failed to generate interactive quiz.");
   }
 };

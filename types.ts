@@ -12,6 +12,7 @@ export interface Question {
   scenario: string;
   question: string;
   options: string[];
+  optionSimulations: string[]; // Added: Simulated terminal output for each option
   correctAnswer: number;
   explanation: string;
   difficulty: Difficulty;
